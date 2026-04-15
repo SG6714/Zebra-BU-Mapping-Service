@@ -100,5 +100,5 @@ export async function getNodesByType(type: NodeType): Promise<IHierarchyNode[]> 
 }
 
 export async function getNodeById(nodeId: string): Promise<IHierarchyNode | null> {
-  return HierarchyNode.findOne({ id: nodeId });
+  return HierarchyNode.findOne({ id: String(nodeId) });
 }
