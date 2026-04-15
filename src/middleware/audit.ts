@@ -19,7 +19,14 @@ export function auditLog(action: string, entityType: string) {
         changed_by: (req.headers['x-api-key'] as string) || 'unknown',
         changes: req.body || {},
         timestamp: new Date(),
-      }).catch((err: Error) => logger.error('Audit log error:', err));
+      }).catch((err: Error) =>
+        logger.error('Audit log error:', {
+          error: err.message,
+          action,
+          entity_type: entityType,
+          entity_id: entityId,
+        })
+      );
 
       return originalJson(data);
     };
