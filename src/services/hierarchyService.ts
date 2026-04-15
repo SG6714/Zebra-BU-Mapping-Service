@@ -29,16 +29,19 @@ function nodeToPlain(node: IHierarchyNode | null): Partial<IHierarchyNode> | nul
 }
 
 export async function getUserHierarchy(email: string): Promise<HierarchyPath | null> {
+  // Sanitize to prevent NoSQL injection: ensure email is a plain string
+  const safeEmail = String(email);
+
   // Find a node where the user is a member or a leader
-  let startNode = await HierarchyNode.findOne({ 'members.email': email });
+  let startNode = await HierarchyNode.findOne({ 'members.email': safeEmail });
 
   if (!startNode) {
-    startNode = await HierarchyNode.findOne({ leader_email: email });
+    startNode = await HierarchyNode.findOne({ leader_email: safeEmail });
   }
 
   if (!startNode) return null;
 
-  const result: HierarchyPath = { member_email: email };
+  const result: HierarchyPath = { member_email: safeEmail };
 
   // Place the starting node at its level
   const levelMap: Record<NodeType, keyof Omit<HierarchyPath, 'member_email'>> = {
@@ -82,9 +85,12 @@ export async function updateLeader(
   nodeId: string,
   leaderEmail: string
 ): Promise<IHierarchyNode | null> {
+  // Sanitize to prevent NoSQL injection
+  const safeNodeId = String(nodeId);
+  const safeLeaderEmail = String(leaderEmail);
   return HierarchyNode.findOneAndUpdate(
-    { id: nodeId },
-    { leader_email: leaderEmail },
+    { id: safeNodeId },
+    { leader_email: safeLeaderEmail },
     { new: true }
   );
 }
