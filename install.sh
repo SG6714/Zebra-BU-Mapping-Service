@@ -6,7 +6,11 @@
 # deploys the service via Docker Compose.
 #
 # Usage:
-#   sudo ./install.sh [OPTIONS]
+#   ./install.sh [OPTIONS]
+#
+# The script can be run as a regular user (without sudo / root).  Privilege-
+# escalation commands (package installation, systemctl) are automatically
+# prefixed with sudo when the script is not already running as root.
 #
 # Options:
 #   --env-file <path>   Path to a pre-existing .env file to use instead of
@@ -61,15 +65,26 @@ while [[ $# -gt 0 ]]; do
 done
 
 # ---------------------------------------------------------------------------
-# Privilege check
+# Privilege escalation helper
+# ---------------------------------------------------------------------------
+# When running as root, SUDO is empty (no prefix needed).
+# When running as a regular user, SUDO is set to "sudo" so that
+# privilege-requiring commands are escalated automatically.
 # ---------------------------------------------------------------------------
 log_step "Checking privileges"
-if [[ $EUID -ne 0 ]]; then
-  log_error "This script must be run as root or with sudo."
-  log_error "Try: sudo $0 $*"
-  exit 1
+if [[ $EUID -eq 0 ]]; then
+  SUDO=""
+  log_success "Running as root — no sudo prefix needed."
+else
+  if ! command -v sudo &>/dev/null; then
+    log_error "'sudo' is not available and this script is not running as root."
+    log_error "Please either run this script as root, or ask your system administrator"
+    log_error "to install sudo and grant your user the necessary privileges."
+    exit 1
+  fi
+  SUDO="sudo"
+  log_info "Running as non-root user — privilege-requiring commands will use sudo."
 fi
-log_success "Running as root."
 
 # ---------------------------------------------------------------------------
 # OS detection — warn if not RHEL-based
@@ -114,7 +129,7 @@ ensure_package() {
   local pkg="$1"
   if ! rpm -q "$pkg" &>/dev/null; then
     log_info "Installing package: ${pkg}"
-    $PKG_MGR install -y "$pkg" || {
+    $SUDO $PKG_MGR install -y "$pkg" || {
       log_error "Failed to install '${pkg}'. Check network connectivity and ${PKG_MGR} repos."
       exit 1
     }
@@ -148,11 +163,11 @@ else
   esac
   log_info "Using Docker repository: ${DOCKER_REPO_URL}"
 
-  $PKG_MGR config-manager --add-repo "${DOCKER_REPO_URL}" 2>&1 | \
+  $SUDO $PKG_MGR config-manager --add-repo "${DOCKER_REPO_URL}" 2>&1 | \
     while IFS= read -r line; do log_info "$line"; done
 
   log_info "Installing Docker CE packages…"
-  $PKG_MGR install -y docker-ce docker-ce-cli containerd.io \
+  $SUDO $PKG_MGR install -y docker-ce docker-ce-cli containerd.io \
     docker-buildx-plugin docker-compose-plugin 2>&1 | \
     while IFS= read -r line; do log_info "$line"; done
 
@@ -165,7 +180,7 @@ fi
 log_step "Step 2 of 5 — Enabling Docker service"
 
 if ! systemctl is-enabled docker &>/dev/null; then
-  systemctl enable docker
+  $SUDO systemctl enable docker
   log_success "Docker service enabled (starts on boot)."
 else
   log_info "Docker service already enabled."
@@ -173,7 +188,7 @@ fi
 
 if ! systemctl is-active --quiet docker; then
   log_info "Starting Docker service…"
-  systemctl start docker
+  $SUDO systemctl start docker
   log_success "Docker service started."
 else
   log_info "Docker service is already running."
@@ -202,7 +217,7 @@ elif command -v docker-compose &>/dev/null; then
   DOCKER_COMPOSE_CMD="docker-compose"
 else
   log_info "Docker Compose plugin not found. Installing…"
-  $PKG_MGR install -y docker-compose-plugin 2>&1 | \
+  $SUDO $PKG_MGR install -y docker-compose-plugin 2>&1 | \
     while IFS= read -r line; do log_info "$line"; done
   log_success "Docker Compose plugin installed."
   DOCKER_COMPOSE_CMD="docker compose"
