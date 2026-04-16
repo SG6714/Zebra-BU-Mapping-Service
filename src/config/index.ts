@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const config = {
-  port: parseInt(process.env.PORT || '3000', 10),
+  port: parseInt(process.env.PORT || '8030', 10),
   mongodbUri: process.env.MONGODB_URI || 'mongodb://localhost:27017/zebra-bu-mapping',
   apiKey: process.env.API_KEY || 'default-dev-api-key',
   azure: {
