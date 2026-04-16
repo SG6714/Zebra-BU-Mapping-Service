@@ -102,3 +102,35 @@ export async function getNodesByType(type: NodeType): Promise<IHierarchyNode[]> 
 export async function getNodeById(nodeId: string): Promise<IHierarchyNode | null> {
   return HierarchyNode.findOne({ id: String(nodeId) });
 }
+
+export async function getAllNodes(): Promise<IHierarchyNode[]> {
+  return HierarchyNode.find({}).sort({ type: 1, name: 1 });
+}
+
+export async function getUserMemberNode(email: string): Promise<IHierarchyNode | null> {
+  return HierarchyNode.findOne({ 'members.email': String(email) });
+}
+
+export async function addMemberToNode(nodeId: string, email: string): Promise<IHierarchyNode | null> {
+  return HierarchyNode.findOneAndUpdate(
+    { id: String(nodeId) },
+    { $addToSet: { members: { email: String(email) } } },
+    { new: true }
+  );
+}
+
+export async function removeMemberFromNode(nodeId: string, email: string): Promise<IHierarchyNode | null> {
+  return HierarchyNode.findOneAndUpdate(
+    { id: String(nodeId) },
+    { $pull: { members: { email: String(email) } } },
+    { new: true }
+  );
+}
+
+export async function updateNodeName(nodeId: string, name: string): Promise<IHierarchyNode | null> {
+  return HierarchyNode.findOneAndUpdate(
+    { id: String(nodeId) },
+    { name: String(name) },
+    { new: true }
+  );
+}

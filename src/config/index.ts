@@ -13,6 +13,8 @@ const config = {
   },
   graphApiBaseUrl: process.env.GRAPH_API_BASE_URL || 'https://graph.microsoft.com/v1.0',
   nodeEnv: process.env.NODE_ENV || 'development',
+  uiPassword: process.env.UI_PASSWORD || 'admin',
+  uiSessionSecret: process.env.UI_SESSION_SECRET || 'default-ui-session-secret',
 };
 
 export default config;
