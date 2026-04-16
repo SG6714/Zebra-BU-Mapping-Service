@@ -49,9 +49,10 @@ tests/
 ### Prerequisites
 
 - A **RHEL-based** Linux host (RHEL, CentOS Stream, Rocky Linux, AlmaLinux, or Fedora)
-- `sudo` / root access
 - Internet connectivity (to pull Docker packages and container images)
 - `openssl` (used to generate a secure random API key; install with `sudo dnf install -y openssl` or `sudo yum install -y openssl`)
+
+> **Note:** The installer can be run as a regular user *or* as root. When run as a non-root user, commands that require elevated privileges (package installation, enabling the Docker service) are automatically executed with `sudo`. Ensure your user account has `sudo` rights if you are not running as root.
 
 > For local development without the installer, you also need Node.js 20+, MongoDB 7+, and an Azure AD app registration (optional).
 
@@ -69,8 +70,8 @@ cd Zebra-BU-Mapping-Service
 # Make the script executable
 chmod +x install.sh
 
-# Run the installer as root / with sudo
-sudo ./install.sh
+# Run the installer (no sudo required — the script escalates internally)
+./install.sh
 ```
 
 The script will:
@@ -94,10 +95,10 @@ The script will:
 
 ```bash
 # Use a pre-existing env file (e.g. from a secrets manager export)
-sudo ./install.sh --env-file /etc/zebra/prod.env
+./install.sh --env-file /etc/zebra/prod.env
 
 # Fully unattended deployment (existing .env in place)
-sudo ./install.sh --non-interactive
+./install.sh --non-interactive
 ```
 
 ---
