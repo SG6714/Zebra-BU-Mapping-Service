@@ -6,9 +6,9 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - '3000:3000'
+      - '8030:8030'
     environment:
-      - PORT=3000
+      - PORT=8030
       - MONGODB_URI=mongodb://mongodb:27017/zebra-bu-mapping
       - API_KEY=${API_KEY:-dev-api-key}
       - AZURE_TENANT_ID=${AZURE_TENANT_ID:-}
