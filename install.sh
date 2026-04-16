@@ -50,7 +50,7 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     -h|--help)
-      sed -n '/^# Usage:/,/^# =====/p' "$0" | grep -v '^# ====='
+      sed -n '/^# Usage:/,/^# ={5,}/p' "$0" | grep -v '^# ={5,}'
       exit 0
       ;;
     *)
@@ -115,7 +115,7 @@ ensure_package() {
   if ! rpm -q "$pkg" &>/dev/null; then
     log_info "Installing package: ${pkg}"
     $PKG_MGR install -y "$pkg" || {
-      log_error "Failed to install '${pkg}'. Check network connectivity and yum/dnf repos."
+      log_error "Failed to install '${pkg}'. Check network connectivity and ${PKG_MGR} repos."
       exit 1
     }
     log_success "Package installed: ${pkg}"
@@ -235,6 +235,14 @@ else
     exit 1
   fi
 
+  # Fail fast if openssl is unavailable — it is required to generate the API key
+  if ! command -v openssl &>/dev/null; then
+    log_error "'openssl' is required to generate a secure random API key but was not found."
+    log_error "Install it with: ${PKG_MGR} install -y openssl"
+    log_error "Alternatively, supply a pre-configured .env file with: --env-file <path>"
+    exit 1
+  fi
+
   echo ""
   echo -e "${BOLD}Environment Variable Configuration${RESET}"
   echo "  Press Enter to accept the default value shown in [brackets]."
@@ -261,18 +269,14 @@ else
   # Prompt for each variable
   PORT=$(prompt_value PORT "Service port" "3000")
   MONGODB_URI=$(prompt_value MONGODB_URI "MongoDB URI" "mongodb://mongodb:27017/zebra-bu-mapping")
-  API_KEY=$(prompt_value API_KEY "API key (secret)" "$(openssl rand -hex 32 2>/dev/null || true)" "true")
-  if [[ -z "$API_KEY" ]]; then
-    log_error "'openssl' is required to generate a random API key but was not found."
-    log_error "Please install openssl ('$PKG_MGR install -y openssl') and re-run, or use --env-file with a pre-set API_KEY."
-    exit 1
-  fi
+  API_KEY=$(prompt_value API_KEY "API key (secret)" "$(openssl rand -hex 32)" "true")
   AZURE_TENANT_ID=$(prompt_value AZURE_TENANT_ID "Azure Tenant ID (optional)" "")
   AZURE_CLIENT_ID=$(prompt_value AZURE_CLIENT_ID "Azure Client ID (optional)" "")
   AZURE_CLIENT_SECRET=$(prompt_value AZURE_CLIENT_SECRET "Azure Client Secret (optional)" "" "true")
   GRAPH_API_BASE_URL=$(prompt_value GRAPH_API_BASE_URL "Graph API base URL" "https://graph.microsoft.com/v1.0")
 
-  # Write the .env file
+  # Write the .env file.
+  # NODE_ENV is always set to 'production' for container deployments via this installer.
   cat > "$ENV_DEST" <<EOF
 PORT=${PORT}
 MONGODB_URI=${MONGODB_URI}
